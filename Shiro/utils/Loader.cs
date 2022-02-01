@@ -1,160 +1,74 @@
-﻿namespace Shiro.utils
+﻿namespace Shiro
 {
+    struct Mesh
+    {
+        public Mesh()
+        {
+        }
+        public string MeshName = "";
+        public List<Vector3f> Vertex = new();
+        public List<Vector2f> Texure = new();
+        public List<Vector3f> Normal = new();
+        public List<Triangle> Faces = new();
+
+        // Material
+        public Material? MeshMaterial = null;
+    };
     class OBJReader
     {
-        struct Vector2
+        public int LoadedMeshes;
+        public int VertexCount => mesh.Vertex.Count;
+        public int UVCount => mesh.Texure.Count;
+        public int FaceCount => mesh.Faces.Count;
+        public int NormalCount => mesh.Normal.Count;
+        public Mesh mesh;
+
+        public OBJReader(string path)
         {
-            // Default Constructor
-            public Vector2()
+            mesh = new Mesh();
+            if (!File.Exists(path))
+                return;
+            StreamReader sr = new StreamReader(path);
+            while (!sr.EndOfStream)
             {
-                X = 0.0f;
-                Y = 0.0f;
+                string? line = sr.ReadLine();
+                if (line == null)
+                    continue;
+                string[] parts = line.Split(' ');
+                switch (parts[0])
+                {
+                    case "v":
+                        mesh.Vertex.Add(new(float.Parse(parts[1]), float.Parse(parts[2]), float.Parse(parts[3])));
+                        break;
+                    case "vt":
+                        mesh.Texure.Add(new(float.Parse(parts[1]), float.Parse(parts[2])));
+                        break;
+                    case "vn":
+                        mesh.Normal.Add(new(float.Parse(parts[1]), float.Parse(parts[2]), float.Parse(parts[3])));
+                        break;
+                    case "f":
+                        var p1 = parts[1].Split(' ').ToList().ConvertAll(int.Parse);
+                        var p2 = parts[2].Split(' ').ToList().ConvertAll(int.Parse);
+                        var p3 = parts[3].Split(' ').ToList().ConvertAll(int.Parse);
+                        Triangle triangle = new(
+                            mesh.Vertex[p1[0]],
+                            mesh.Vertex[p2[0]],
+                            mesh.Vertex[p3[0]]);
+                        triangle.t0 = mesh.Texure[p1[1]];
+                        triangle.t1 = mesh.Texure[p2[1]];
+                        triangle.t2 = mesh.Texure[p3[1]];
+                        triangle.normal = mesh.Normal[p1[2]];//法线三个顶点都相同
+                        mesh.Faces.Add(triangle);
+                        break;
+                    default:
+                        throw new Exception("unable to resolve obj file.");
+                }
             }
-            // Variable Set Constructor
-            Vector2(float X_, float Y_)
-            {
-                X = X_;
-                Y = Y_;
-            }
-            // Bool Equals Operator Overload
-            public static bool operator ==(Vector2 t, Vector2 other)
-            {
-                return (t.X == other.X && t.Y == other.Y);
-            }
-            // Bool Not Equals Operator Overload
-            public static bool operator !=(Vector2 t, Vector2 other)
-            {
-                return !(t.X == other.X && t.Y == other.Y);
-            }
-            // Addition Operator Overload
-            public static Vector2 operator +(Vector2 t, Vector2 right)
-            {
-                return new(t.X + right.X, t.Y + right.Y);
-            }
-            // Subtraction Operator Overload
-            public static Vector2 operator -(Vector2 t, Vector2 right)
-            {
-                return new(t.X - right.X, t.Y - right.Y);
-            }
-            // Float Multiplication Operator Overload
-            public static Vector2 operator *(Vector2 t, float other)
-            {
-                return new(t.X * other, t.Y * other);
-            }
-
-            // Positional Variables
-            float X;
-            float Y;
-
-            public override bool Equals(object? obj)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override int GetHashCode()
-            {
-                throw new NotImplementedException();
-            }
-        };
-
-        struct Vector3
+            ++LoadedMeshes;
+        }
+        public Mesh GetMesh()
         {
-            // Default Constructor
-            public Vector3()
-            {
-                X = 0.0f;
-                Y = 0.0f;
-                Z = 0.0f;
-            }
-            // Variable Set Constructor
-            public Vector3(float X_, float Y_, float Z_)
-            {
-                X = X_;
-                Y = Y_;
-                Z = Z_;
-            }
-            // Bool Equals Operator Overload
-           public static bool operator ==(Vector3 t, Vector3 other)
-            {
-                return (t.X == other.X && t.Y == other.Y && t.Z == other.Z);
-            }
-            // Bool Not Equals Operator Overload
-            public static bool operator !=(Vector3 t, Vector3 other)
-            {
-                return !(t.X == other.X && t.Y == other.Y && t.Z == other.Z);
-            }
-            // Addition Operator Overload
-            public static Vector3 operator +(Vector3 t, Vector3 right)
-            {
-                return new(t.X + right.X, t.Y + right.Y, t.Z + right.Z);
-            }
-            // Subtraction Operator Overload
-            public static Vector3 operator -(Vector3 t, Vector3 right)
-            {
-                return new(t.X - right.X, t.Y - right.Y, t.Z - right.Z);
-            }
-            // Float Multiplication Operator Overload
-            public static Vector3 operator *(Vector3 t, float other)
-            {
-                return new(t.X * other, t.Y * other, t.Z * other);
-            }
-            // Float Division Operator Overload
-            public static Vector3 operator /(Vector3 t, float other)
-            {
-                return new(t.X / other, t.Y / other, t.Z / other);
-            }
-
-            // Positional Variables
-            float X;
-            float Y;
-            float Z;
-
-            public override bool Equals(object? obj)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override int GetHashCode()
-            {
-                throw new NotImplementedException();
-            }
-        };
-
-        struct Mesh
-        {
-            // Default Constructor
-            public Mesh()
-            {
-
-            }
-            // Variable Set Constructor
-            public Mesh(List<Vertex> _Vertices, List<uint> _Indices)
-            {
-                Vertices = _Vertices;
-                Indices = _Indices;
-                MeshMaterial = null;
-            }
-            // Mesh Name
-            string MeshName="";
-            // Vertex List
-            List<Vertex> Vertices=new();
-            // Index List
-            List<uint> Indices = new();
-
-            // Material
-            Material? MeshMaterial = null;
-        };
-
-        struct Vertex
-        {
-            // Position Vector
-            Vector3 Position;
-
-            // Normal Vector
-            Vector3 Normal;
-
-            // Texture Coordinate Vector
-            Vector2 TextureCoordinate;
-        };
+            return this.mesh;
+        }
     }
 }

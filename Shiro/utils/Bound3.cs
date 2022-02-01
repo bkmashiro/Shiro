@@ -17,7 +17,7 @@ namespace Shiro
             pMax = new Vector3f(Max(p1.x, p2.x), Max(p1.y, p2.y), Max(p1.z, p2.z));
         }
         public Vector3f Diagonal { get { return pMax - pMin; } }
-        public int MaxElement
+        public int MaxExtent
         {
             get
             {

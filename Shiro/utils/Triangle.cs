@@ -1,22 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-
-namespace Shiro
+﻿namespace Shiro
 {
     class Triangle : Object
     {
-        Vector3f v0, v1, v2; // vertices A, B ,C , counter-clockwise order
-        Vector3f e1, e2;     // 2 edges v1-v0, v2-v0;
-        Vector3f? t0, t1, t2; // texture coords
-        Vector3f normal;
-        float area;
-        Material m;
+        public Vector3f v0, v1, v2; // vertices A, B ,C , counter-clockwise order
+        public Vector3f e1, e2;     // 2 edges v1-v0, v2-v0;
+        public Vector2f? t0, t1, t2; // texture coords
+        public Vector3f normal;
+        public float area;
+        public Material? m;
 
-        public Triangle(Vector3f v0, Vector3f v1, Vector3f v2, Material m)
+        public Triangle(Vector3f v0, Vector3f v1, Vector3f v2, Material? m = null)
         {
             this.v0 = v0;
             this.v1 = v1;
@@ -90,7 +83,7 @@ namespace Shiro
 
         public override bool hasEmit()
         {
-            return m.HasEmission();
+            return m?.HasEmission()??false;
         }
 
         public override bool intersect(Ray ray)
@@ -103,7 +96,7 @@ namespace Shiro
             throw new NotImplementedException();
         }
 
-        public override void Sample(Intersection pos,out float pdf)
+        public override void Sample(Intersection pos, out float pdf)
         {
             float x = (float)Sqrt(get_random_float()), y = get_random_float();
             pos.coords = v0 * (1.0f - x) + v1 * (x * (1.0f - y)) + v2 * (x * y);
@@ -118,8 +111,8 @@ namespace Shiro
     }
     class MeshTriangle : Object
     {
-        
-       public MeshTriangle()
+
+        public MeshTriangle()
         {
 
         }
