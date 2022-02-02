@@ -48,7 +48,7 @@ namespace Shiro
             }
             else if (obj.Count == 2)
             {
-                node.left = recursiveBuild(obj.GetRange(0,0));
+                node.left = recursiveBuild(obj.GetRange(0, 0));
                 node.right = recursiveBuild(obj.GetRange(1, 1));
 
                 node.bounds = Union(node.left.bounds!, node.right.bounds!);
@@ -57,7 +57,7 @@ namespace Shiro
             }
             else
             {
-                Bound3 centroidBounds=new(new());
+                Bound3 centroidBounds = new(new());
                 for (int i = 0; i < obj.Count; ++i)
                     centroidBounds = Union(centroidBounds, obj[i].getBounds()!.Centroid);
                 int dim = centroidBounds.MaxExtent;
@@ -78,7 +78,7 @@ namespace Shiro
                 var middling = 0 + (obj.Count / 2);
                 var ending = obj.Count;
 
-                var leftshapes = obj.GetRange(beginning,middling);
+                var leftshapes = obj.GetRange(beginning, middling);
                 var rightshapes = obj.GetRange(middling, ending);
 
                 Debug.Assert(obj.Count == (leftshapes.Count + rightshapes.Count));
@@ -91,6 +91,60 @@ namespace Shiro
 
             return node;
         }
+        public Intersection Intersect(Ray ray)
+        {
+            Intersection isect = new();
+            if (root != null)
+                return isect;
+            isect = GetIntersection(root!, ray);
+            return isect;
+        }
 
+        public Intersection GetIntersection(BVHBuildNode node, Ray ray)
+        {
+
+            Intersection inter=new();
+
+            // 光线方向
+            float x = ray.direction.x;
+            float y = ray.direction.y;
+            float z = ray.direction.z;
+
+            // 判断结点的包围盒与光线是否相交
+            if (node.bounds?.IntersectP(ray) == false) return inter;
+
+            if (node.left == null&& node.right == null)
+            {
+                inter = node.obj!.getIntersection(ray);
+                return inter;
+            }
+
+            // 递归判断子节点是否存在与光线相交的情况
+            var hit1 = GetIntersection(node.left!, ray);
+            var hit2 = GetIntersection(node.right!, ray);
+
+            if (hit1.distance < hit2.distance)
+                return hit1;
+            return hit2;
+        }
+
+        public void GetSample(BVHBuildNode node, float p, Intersection pos, out float pdf)
+        {
+            if (node.left == null || node.right == null)
+            {
+                node.obj!.Sample(pos,out pdf);
+                pdf *= node.area??0;
+                return;
+            }
+            if (p < node.left.area) GetSample(node.left, p, pos,out pdf);
+            else GetSample(node.right, p - node.left.area??0, pos,out pdf);
+        }
+
+        public void Sample(Intersection pos,out float pdf)
+        {
+            float p = (float)(Sqrt(get_random_float()) * root!.area??1);
+            GetSample(root, p, pos,out pdf);
+            pdf /= root.area??1;
+        }
     }
 }

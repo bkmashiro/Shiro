@@ -1,11 +1,11 @@
 ﻿namespace Shiro
 {
-    class Object
+    abstract class Object
     {
         public Object() { }
 
         public virtual bool intersect(Ray ray) { return false; }
-        public virtual bool intersect(Ray ray, float tnear, int index) { return false; }
+        public abstract bool intersect(ref Ray ray, ref float tnear, ref int index);
         public virtual Intersection getIntersection(Ray _ray) { return new Intersection(); }
         public virtual void getSurfaceProperties(Vector3f P, Vector3f I, int index, Vector2f uv, Vector3f N, Vector2f st) { }
         public virtual Vector3f? evalDiffuseColor(Vector2f v) { return null;}

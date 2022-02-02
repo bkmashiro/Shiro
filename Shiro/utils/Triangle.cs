@@ -8,7 +8,15 @@
         public Vector3f normal;
         public float area;
         public Material? m;
+        int numTriangles;
+        Bound3 bounding_box;
+        Vector3f[] vertices;
+        int[] vertexIndex;
+        List<Vector2f[]> stCoordinates;
 
+        List<Triangle> triangles;
+
+        BVHAccel bvh;
         public Triangle(Vector3f v0, Vector3f v1, Vector3f v2, Material? m = null)
         {
             this.v0 = v0;
@@ -83,7 +91,7 @@
 
         public override bool hasEmit()
         {
-            return m?.HasEmission()??false;
+            return m?.HasEmission() ?? false;
         }
 
         public override bool intersect(Ray ray)
@@ -91,9 +99,59 @@
             throw new NotImplementedException();
         }
 
-        public override bool intersect(Ray ray, float tnear, int index)
+        bool RayTriangleIntersect(Vector3f v0, Vector3f v1,
+                           Vector3f v2, Vector3f orig,
+                           Vector3f dir, out float tnear, out float u, out float v)
         {
-            throw new NotImplementedException();
+            tnear = float.NaN;
+            u = float.NaN;
+            v = float.NaN;
+            Vector3f edge1 = v1 - v0;
+            Vector3f edge2 = v2 - v0;
+            Vector3f pvec = CrossProduct(dir, edge2);
+            float det = DotProduct(edge1, pvec);
+            if (det == 0 || det < 0)
+                return false;
+
+            Vector3f tvec = orig - v0;
+            u = DotProduct(tvec, pvec);
+            if (u < 0 || u > det)
+                return false;
+
+            Vector3f qvec = CrossProduct(tvec, edge1);
+            v = DotProduct(dir, qvec);
+            if (v < 0 || u + v > det)
+                return false;
+
+            float invDet = 1 / det;
+
+            tnear = DotProduct(edge2, qvec) * invDet;
+            u *= invDet;
+            v *= invDet;
+
+            return true;
+        }
+
+        public override bool intersect(ref Ray ray, ref float tnear, ref int index)
+        {
+            bool intersect = false;
+            for (int k = 0; k < numTriangles; ++k)
+            {
+                Vector3f v0 = vertices[vertexIndex[k * 3]];
+                Vector3f v1 = vertices[vertexIndex[k * 3 + 1]];
+                Vector3f v2 = vertices[vertexIndex[k * 3 + 2]];
+                float t, u, v;
+                if (RayTriangleIntersect(v0, v1, v2, ray.origin, ray.direction, out t,
+                                        out u, out v) &&
+                    t < tnear)
+                {
+                    tnear = t;
+                    index = k;
+                    intersect |= true;
+                }
+            }
+
+            return intersect;
         }
 
         public override void Sample(Intersection pos, out float pdf)
@@ -161,9 +219,9 @@
             return base.intersect(ray);
         }
 
-        public override bool intersect(Ray ray, float tnear, int index)
+        public override bool intersect(ref Ray ray, ref float tnear, ref int index)
         {
-            return base.intersect(ray, tnear, index);
+            throw new NotImplementedException();
         }
 
         public override void Sample(Intersection pos, out float pdf)
