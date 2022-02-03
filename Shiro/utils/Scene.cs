@@ -2,15 +2,15 @@
 {
     class Scene
     {
-        public static int width = 1280;
-        public static int height = 960;
-        public static double fov = 40;
-        public static Vector3f backgroundColor = new(0.235294f, 0.67451f, 0.843137f);
-        public static int maxDepth = 1;
-        public static float RussianRoulette = 0.8F;
+        public int width = 1280;
+        public int height = 960;
+        public double fov = 40;
+        public Vector3f backgroundColor = new(0.235294f, 0.67451f, 0.843137f);
+        public int maxDepth = 1;
+        public float RussianRoulette = 0.8F;
         List<Object> objects = new List<Object>();
         List<Light> lights = new List<Light>();
-        BVHAccel BVHAccel;
+        public BVHAccel BVHAccel;
 
         public Scene(int w, int h)
         {
@@ -82,11 +82,13 @@
             BVHAccel = new BVHAccel(objects, 1, SplitMethod.NAIVE);
         }
 
-        public Intersection intersect(Ray ray) { return BVHAccel.Intersect(ray); }
+        public Intersection intersect(Ray ray) 
+        { 
+            return BVHAccel.Intersect(ray);
+        }
 
-        public void sampleLight(Intersection pos, out float pdf)
+        public void sampleLight(ref Intersection pos, ref float pdf)
         {
-
             float emit_area_sum = 0;
             for (int k = 0; k < objects.Count; ++k)
             {
@@ -104,13 +106,11 @@
                     emit_area_sum += objects[k].getArea();
                     if (p <= emit_area_sum)
                     {
-                        objects[k].Sample(pos, out pdf);
+                        objects[k].Sample(ref pos, ref pdf);
                         break;
                     }
                 }
             }
-            pdf = 0;
-            throw new Exception("pdf error");
         }
 
         public bool trace(
@@ -133,15 +133,14 @@
         }
 
         // Implementation of Path Tracing
-        Vector3f castRay(Ray ray, int depth)
+        public Vector3f castRay(Ray ray, int depth)
         {
 
             Intersection intersection = intersect(ray);
 
             if (!intersection.happened)
                 return new(0, 0, 0);
-            //if (intersection.m.hasEmission())
-            //	return intersection.m.getEmission();
+
             if (intersection.m.HasEmission())
             {
                 if (depth == 0)
@@ -150,51 +149,55 @@
                     return Vector3f.ZERO;
             }
 
-            Vector3f  p = intersection.coords;
+            Vector3f p = intersection.coords;
             Vector3f wo = Normalize(-ray.direction);
             Vector3f normal = Normalize(intersection.normal);
-            Material  material = intersection.m;
+            Material material = intersection.m;
 
-            var format = (Vector3f a)=> {
+            var format = (ref Vector3f a) =>
+            {
                 if (a.x < 0) a.x = 0;
                 if (a.y < 0) a.y = 0;
                 if (a.z < 0) a.z = 0;
             };
 
             // direct
-            Vector3f L_direct=new();
+            Vector3f L_direct = new();
             {
-                Intersection inter_dir=new();
-                float pdf_dir=float.NaN;
-                sampleLight(inter_dir,out pdf_dir);
+                Intersection inter_dir = new();
+                float pdf_dir = float.NaN;
+                sampleLight(ref inter_dir, ref pdf_dir);
 
-                Vector3f  x = inter_dir.coords;
-                Vector3f ws = Normalize(x - p);
+                Vector3f x = inter_dir.coords;//光源的坐标
+                Vector3f ws = Normalize(x - p);//该点指向光源
                 Vector3f light_normal = Normalize(inter_dir.normal);
-                Ray ray1=new(p, ws);
+                Ray ray1 = new(p, ws);
                 var pws = intersect(ray1);
                 if (pws.happened && (pws.coords - x).Norm < 1e-2)
                 {
                     L_direct = inter_dir.emit * material.eval(ws, wo, normal) * DotProduct(normal, ws)
-                        * DotProduct(light_normal, -ws) / (DotProduct((x - p), (x - p))*  pdf_dir);
-                    format(L_direct);
+                        * DotProduct(light_normal, -ws) / (DotProduct((x - p), (x - p)) * pdf_dir);
+                    format(ref L_direct);
                 }
             }
             // indirect
-            Vector3f L_indirect=new();
+            Vector3f L_indirect = new();
             {
                 float RR = RussianRoulette;
                 if (get_random_float() < RR)
                 {
                     Vector3f wi = Normalize(material.Sample(wo, normal));
                     Ray ray1 = new(p, wi);
-                    L_indirect = castRay(ray1, depth + 1)*
+                    L_indirect = castRay(ray1, depth + 1) *
                          material.eval(wi, wo, normal) * DotProduct(wi, normal)
                         / (material.PDF(wi, wo, normal) * RR);
-                    format(L_indirect);
+                    format(ref L_indirect);
                 }
             }
             return L_direct + L_indirect;
         }
+
+        public void Add(Object o) { objects.Add(o); }
+        public void Add(Light light) { lights.Add(light); }
     }
 }

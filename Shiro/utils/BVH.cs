@@ -19,21 +19,28 @@ namespace Shiro
             left = null; right = null;
             obj = null;
         }
-    };
 
+        public override string ToString()
+        {
+            return $"{bounds}" +
+                $"\n  {(left == null ? "NULL" : left)}" +
+                $"\n  {(right == null ? "NULL" : right)}";
+        }
+    }
     class BVHAccel
     {
-        BVHBuildNode? root;
+        public BVHBuildNode? root;
         public BVHAccel(List<Object> p, int maxPrimsInNode = 1, SplitMethod splitMethod = SplitMethod.NAIVE)
         {
-            recursiveBuild(p);
+            root = recursiveBuild(p);
+            Console.WriteLine(root);
         }
 
         BVHBuildNode recursiveBuild(List<Object> obj)
         {
             BVHBuildNode node = new BVHBuildNode();
             // Compute bounds of all primitives in BVH node
-            Bound3 bounds = new(new());
+            Bound3 bounds = new();
             for (int i = 0; i < obj.Count; ++i)
                 bounds = Union(bounds, obj[i].getBounds()!);
             if (obj.Count == 1)
@@ -48,7 +55,7 @@ namespace Shiro
             }
             else if (obj.Count == 2)
             {
-                node.left = recursiveBuild(obj.GetRange(0, 0));
+                node.left = recursiveBuild(obj.GetRange(0, 1));
                 node.right = recursiveBuild(obj.GetRange(1, 1));
 
                 node.bounds = Union(node.left.bounds!, node.right.bounds!);
@@ -64,22 +71,22 @@ namespace Shiro
                 switch (dim)
                 {
                     case 0:
-                        obj.Sort((o1, o2) => { return o1.getBounds()!.Centroid.x.CompareTo(o1.getBounds()!.Centroid.x); });
+                        obj.Sort((o1, o2) => { return o1.getBounds()!.Centroid.x.CompareTo(o2.getBounds()!.Centroid.x); });
                         break;
                     case 1:
-                        obj.Sort((o1, o2) => { return o1.getBounds()!.Centroid.y.CompareTo(o1.getBounds()!.Centroid.y); });
+                        obj.Sort((o1, o2) => { return o1.getBounds()!.Centroid.y.CompareTo(o2.getBounds()!.Centroid.y); });
                         break;
                     case 2:
-                        obj.Sort((o1, o2) => { return o1.getBounds()!.Centroid.z.CompareTo(o1.getBounds()!.Centroid.z); });
+                        obj.Sort((o1, o2) => { return o1.getBounds()!.Centroid.z.CompareTo(o2.getBounds()!.Centroid.z); });
                         break;
                 }
 
                 var beginning = 0;
                 var middling = 0 + (obj.Count / 2);
-                var ending = obj.Count;
+                var ending = obj.Count - 1;
 
-                var leftshapes = obj.GetRange(beginning, middling);
-                var rightshapes = obj.GetRange(middling, ending);
+                var leftshapes = obj.GetRange(beginning, middling - beginning);
+                var rightshapes = obj.GetRange(middling, ending - middling + 1);
 
                 Debug.Assert(obj.Count == (leftshapes.Count + rightshapes.Count));
                 node.left = recursiveBuild(leftshapes);
@@ -88,32 +95,30 @@ namespace Shiro
                 node.bounds = Union(node.left.bounds!, node.right.bounds!);
                 node.area = node.left.area + node.right.area;
             }
-
             return node;
         }
         public Intersection Intersect(Ray ray)
         {
             Intersection isect = new();
-            if (root != null)
+            if (root == null)
+            {
                 return isect;
+                throw new InvalidOperationException();
+            }
             isect = GetIntersection(root!, ray);
+            //Debug.Assert(!isect.happened);
             return isect;
         }
 
         public Intersection GetIntersection(BVHBuildNode node, Ray ray)
         {
 
-            Intersection inter=new();
-
-            // 光线方向
-            float x = ray.direction.x;
-            float y = ray.direction.y;
-            float z = ray.direction.z;
+            Intersection inter = new();
 
             // 判断结点的包围盒与光线是否相交
             if (node.bounds?.IntersectP(ray) == false) return inter;
 
-            if (node.left == null&& node.right == null)
+            if (node.left == null && node.right == null)
             {
                 inter = node.obj!.getIntersection(ray);
                 return inter;
@@ -128,23 +133,28 @@ namespace Shiro
             return hit2;
         }
 
-        public void GetSample(BVHBuildNode node, float p, Intersection pos, out float pdf)
+        public void GetSample(BVHBuildNode node, float p, ref Intersection pos, ref float pdf)
         {
             if (node.left == null || node.right == null)
             {
-                node.obj!.Sample(pos,out pdf);
-                pdf *= node.area??0;
+                node.obj!.Sample(ref pos, ref pdf);
+                pdf *= node.area ?? 0;
                 return;
             }
-            if (p < node.left.area) GetSample(node.left, p, pos,out pdf);
-            else GetSample(node.right, p - node.left.area??0, pos,out pdf);
+            if (p < node.left.area) GetSample(node.left, p, ref pos, ref pdf);
+            else GetSample(node.right, p - node.left.area ?? 0, ref pos, ref pdf);
         }
 
-        public void Sample(Intersection pos,out float pdf)
+        public void Sample(ref Intersection pos, ref float pdf)
         {
-            float p = (float)(Sqrt(get_random_float()) * root!.area??1);
-            GetSample(root, p, pos,out pdf);
-            pdf /= root.area??1;
+            float p = (float)(Sqrt(get_random_float()) * root!.area ?? 1);
+            GetSample(root, p, ref pos, ref pdf);
+            pdf /= root.area ?? 1;
+        }
+
+        public override string ToString()
+        {
+            return root.ToString();
         }
     }
 }

@@ -81,8 +81,8 @@ namespace Shiro
         }
         public MaterialType MaterialType;
         public Vector3f? Emission;
-        public Vector3f? Ks=new(1);
-        public Vector3f? Kd { get { return Kd; } set { Kd = value??new(0); } }
+        public Vector3f? Ks=new(1f);
+        public Vector3f? Kd =new(1f);
         public Material(MaterialType t, Vector3f? e)
         {
             MaterialType = t;
@@ -90,7 +90,7 @@ namespace Shiro
         }
         public MaterialType GetMaterialType() { return MaterialType; }
         public Vector3f? getEmission() { return Emission; }
-        public bool HasEmission() { return Emission != null; }
+        public bool HasEmission() { return Emission?.Norm!>EPSILON; }
         public Vector3f GetColorAt(float u, float v)
         {
             //TODO

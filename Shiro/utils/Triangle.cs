@@ -29,7 +29,30 @@ namespace Shiro
             normal = Normalize(CrossProduct(e1, e2));
             area = CrossProduct(e1, e2).Norm * 0.5f;
         }
+        public Vector3f this[int index]
+        {
+            get
+            {
+                switch (index)
+                {
+                    case 0: return this.v0;
+                    case 1: return this.v1;
+                    case 2: return this.v2;
+                }
+                throw new IndexOutOfRangeException();
+            }
+            set
+            {
+                switch (index)
+                {
+                    case 0: v0 = value; break;
+                    case 1: v1 = value; break;
+                    case 2: v2 = value; break;
+                    default: throw new IndexOutOfRangeException();
+                }
 
+            }
+        }
 
         public override Vector3f? evalDiffuseColor(Vector2f v)
         {
@@ -48,11 +71,12 @@ namespace Shiro
 
         public override Intersection getIntersection(Ray ray)
         {
+            //Debug.Assert(false);
             Intersection inter = new Intersection();
 
             if (DotProduct(ray.direction, normal) > 0)
                 return inter;
-            double u, v, t_tmp = 0;
+            double u, v;
             Vector3f pvec = CrossProduct(ray.direction, e2);
             double det = DotProduct(e1, pvec);
             if (Abs(det) < EPSILON)
@@ -67,7 +91,7 @@ namespace Shiro
             v = DotProduct(ray.direction, qvec) * det_inv;
             if (v < 0 || u + v > 1)
                 return inter;
-            t_tmp = DotProduct(e2, qvec) * det_inv;
+            double t_tmp = DotProduct(e2, qvec) * det_inv;
 
             if (t_tmp < 0)
             {
@@ -84,7 +108,7 @@ namespace Shiro
             return inter;
         }
 
-        public override void getSurfaceProperties(Vector3f P, Vector3f I, int index, Vector2f uv,out Vector3f N,out Vector2f st)
+        public override void getSurfaceProperties(Vector3f P, Vector3f I, int index, Vector2f uv, out Vector3f N, out Vector2f st)
         {
             N = normal;
             throw new NotImplementedException();
@@ -105,7 +129,7 @@ namespace Shiro
             return false;
         }
 
-        public override void Sample(Intersection pos, out float pdf)
+        public override void Sample(ref Intersection pos, ref float pdf)
         {
             float x = (float)Sqrt(get_random_float()), y = get_random_float();
             pos.coords = v0 * (1.0f - x) + v1 * (x * (1.0f - y)) + v2 * (x * y);
@@ -128,7 +152,7 @@ namespace Shiro
 
         List<Triangle> triangles = new List<Triangle>();
 
-        BVHAccel bvh;
+        public BVHAccel bvh;
         float area;
 
         Material m;
@@ -142,16 +166,15 @@ namespace Shiro
 
             Vector3f min_vert = new(float.PositiveInfinity);
             Vector3f max_vert = new(float.NegativeInfinity);
-            for (int i = 0; i < mesh.Vertex.Count; i += 3)
+            for (int i = 0; i < mesh.Faces.Count; ++i)
             {
-                var face_vertices = new Vector3f[3];
+                var triangle = mesh.Faces[i];
 
                 for (int j = 0; j < 3; j++)
                 {
-                    Vector3f vert = new(mesh.Vertex[i + j].x,
-                                         mesh.Vertex[i + j].y,
-                                         mesh.Vertex[i + j].z);
-                    face_vertices[j] = vert;
+                    Vector3f vert = new(triangle[j].x,
+                                         triangle[j].y,
+                                         triangle[j].z);
 
                     min_vert = new(Min(min_vert.x, vert.x),
                                         Min(min_vert.y, vert.y),
@@ -159,21 +182,21 @@ namespace Shiro
                     max_vert = new(Max(max_vert.x, vert.x),
                                         Max(max_vert.y, vert.y),
                                         Max(max_vert.z, vert.z));
+
                 }
+                triangle.m = mt;
+                triangles.Add(triangle);
 
-                triangles.Add(new(face_vertices[0], face_vertices[1], face_vertices[2], mt));
-            }
+                bounding_box = new(min_vert, max_vert);
 
-            bounding_box = new(min_vert, max_vert);
-
-            List<Object> ptrs = new();
-            foreach (var tri in triangles)
-            {
-                ptrs.Add(tri);
-                area += tri.area;
-            }
-            bvh = new BVHAccel(ptrs);
-        }
+                List<Object> ptrs = new();
+                foreach (var tri in triangles)
+                {
+                    ptrs.Add(tri);
+                    area += tri.area;
+                }
+                bvh = new BVHAccel(ptrs);
+            }}
         public override Vector3f? evalDiffuseColor(Vector2f st)
         {
             //需要测试^号用途（在cpp文件中）
@@ -196,9 +219,9 @@ namespace Shiro
 
         public override Intersection getIntersection(Ray ray)
         {
-            Intersection intersec=new();
+            Intersection intersec = new();
 
-            if (bvh!=null)
+            if (bvh != null)
             {
                 intersec = bvh.Intersect(ray);
             }
@@ -206,7 +229,7 @@ namespace Shiro
             return intersec;
         }
 
-        public override void getSurfaceProperties(Vector3f P, Vector3f I, int index, Vector2f uv,out Vector3f N,out Vector2f st)
+        public override void getSurfaceProperties(Vector3f P, Vector3f I, int index, Vector2f uv, out Vector3f N, out Vector2f st)
         {
             Vector3f v0 = vertices[vertexIndex[index * 3]];
             Vector3f v1 = vertices[vertexIndex[index * 3 + 1]];
@@ -253,9 +276,9 @@ namespace Shiro
             return intersect;
         }
 
-        public override void Sample(Intersection pos, out float pdf)
+        public override void Sample(ref Intersection pos, ref float pdf)
         {
-            bvh.Sample(pos,out pdf);
+            bvh.Sample(ref pos, ref pdf);
             pos.emit = m.getEmission();
         }
     }

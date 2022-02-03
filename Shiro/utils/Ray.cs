@@ -8,8 +8,8 @@
         public double t;
         public double t_min, t_max;
        public Ray(Vector3f ori,
-            Vector3f dir,
-            double time = 0.0)
+                  Vector3f dir,
+                  double time = 0.0)
         {
             origin = ori;
             t = time;

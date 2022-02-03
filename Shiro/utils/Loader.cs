@@ -47,17 +47,23 @@
                         mesh.Normal.Add(new(float.Parse(parts[1]), float.Parse(parts[2]), float.Parse(parts[3])));
                         break;
                     case "f":
+                        //f 1/2/3 4/5/6 7/8/9
                         var p1 = parts[1].Split(' ').ToList().ConvertAll(int.Parse);
                         var p2 = parts[2].Split(' ').ToList().ConvertAll(int.Parse);
                         var p3 = parts[3].Split(' ').ToList().ConvertAll(int.Parse);
+                        int length = p1.Count;
                         Triangle triangle = new(
-                            mesh.Vertex[p1[0]],
-                            mesh.Vertex[p2[0]],
-                            mesh.Vertex[p3[0]]);
-                        triangle.t0 = mesh.Texure[p1[1]];
-                        triangle.t1 = mesh.Texure[p2[1]];
-                        triangle.t2 = mesh.Texure[p3[1]];
-                        triangle.normal = mesh.Normal[p1[2]];//法线三个顶点都相同
+                            mesh.Vertex[p1[0]-1],
+                            mesh.Vertex[p2[0]-1],
+                            mesh.Vertex[p3[0]-1]);
+                        if (p1.Count >= 2)
+                        {
+                            triangle.t0 = mesh.Texure[p1[1]-1];
+                            triangle.t1 = mesh.Texure[p2[1]-1];
+                            triangle.t2 = mesh.Texure[p3[1]-1];
+                            if (p1.Count >= 3)
+                                triangle.normal = mesh.Normal[p1[2]-1];//法线三个顶点都相同
+                        }
                         mesh.Faces.Add(triangle);
                         break;
                     default:

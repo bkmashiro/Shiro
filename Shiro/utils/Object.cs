@@ -11,7 +11,7 @@
         public abstract Vector3f? evalDiffuseColor(Vector2f v);
         public abstract Bound3? getBounds();
         public abstract float getArea();
-        public abstract void Sample(Intersection pos, out float pdf);
+        public abstract void Sample(ref Intersection pos, ref float pdf);
         public abstract bool hasEmit();
     }
 }

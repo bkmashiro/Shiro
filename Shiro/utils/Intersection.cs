@@ -9,7 +9,7 @@
             normal = null;
             emit = null;
             tcoords = null;
-            distance = null;
+            distance = double.PositiveInfinity;
             obj = null;
             m = null;
         }
@@ -18,7 +18,7 @@
         public Vector3f? tcoords;
         public Vector3f? normal;
         public Vector3f? emit;
-        public double? distance;
+        public double distance;
         public Object? obj;
         public Material? m;
     };

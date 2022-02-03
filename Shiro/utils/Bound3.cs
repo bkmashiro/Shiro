@@ -10,6 +10,11 @@ namespace Shiro
     class Bound3
     {
         public Vector3f pMin, pMax;
+        public Bound3()
+        {
+            pMax = new Vector3f(float.MinValue);
+            pMin = new Vector3f(float.MaxValue);
+        }
         public Bound3(Vector3f p) { pMin = pMax = p; }
         public Bound3(Vector3f p1, Vector3f p2)
         {
@@ -86,10 +91,13 @@ namespace Shiro
                 tEnter = Max(min, tEnter);
                 tExit = Min(max, tExit);
             }
-            return tEnter < tExit && tExit >= 0;
+            return tEnter <= tExit && tExit >= 0;
         }
         public static Bound3 Union(Bound3 b1, Bound3 b2) => new Bound3(Vector3f.Min(b1.pMin, b2.pMin), Vector3f.Max(b1.pMax, b2.pMax));
         public static Bound3 Union(Bound3 b1, Vector3f p) => new Bound3(Vector3f.Min(b1.pMin, p), Vector3f.Max(b1.pMax, p));
-
+        public override string ToString()
+        {
+            return $"[{pMin},{pMax}]";
+        }
     }
 }

@@ -54,7 +54,10 @@ namespace Shiro
         public static Vector3f Max(Vector3f p1, Vector3f p2) => new Vector3f(Math.Max(p1.x, p2.x), Math.Max(p1.y, p2.y), Math.Max(p1.z, p2.z));
         public static readonly Vector3f ZERO = new Vector3f(0,0,0);
 
-
+        public override string ToString()
+        {
+            return $"({x},{y},{z})";
+        }
     }
     class Vector2f
     {
