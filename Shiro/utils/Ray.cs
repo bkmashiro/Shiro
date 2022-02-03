@@ -7,7 +7,7 @@
         public Vector3f direction_inv { get; }
         public double t;
         public double t_min, t_max;
-        Ray(Vector3f ori,
+       public Ray(Vector3f ori,
             Vector3f dir,
             double time = 0.0)
         {
