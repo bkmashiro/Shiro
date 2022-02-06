@@ -11,6 +11,7 @@ namespace Shiro
     };
     class Renderer
     {
+        //parallelized needed
         static float deg2rad(float deg)
         {
             return deg * (float)PI / 180.0f;
